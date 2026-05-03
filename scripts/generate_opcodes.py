@@ -66,7 +66,7 @@ def _is_work_addr_u16(name):
         return False
     if name in _WORK_ADDR_NAMES:
         return True
-    return name.endswith("_offset")
+    return name.endswith("_offset") or name.endswith("_destination")
 
 
 def _generic_emit(opname, operands=()):
