@@ -779,6 +779,54 @@ op(
 )(_scheduler("createZoneSchedulerTask", work_attr=None))
 
 
+# Map-scheduler pair: 3 u32 (entity1, entity2, scheduler_id), no work.
+op(
+    0x51,
+    "END_MAP_SCHEDULER",
+    operands=[("entity1", "u32"), ("entity2", "u32"), ("scheduler_id", "u32")],
+)(_scheduler("endMapScheduler", work_attr=None))
+
+
+op(
+    0x54,
+    "WAIT_MAP_SCHEDULER",
+    operands=[("entity1", "u32"), ("entity2", "u32"), ("scheduler_id", "u32")],
+)(_scheduler("waitMapScheduler", work_attr=None))
+
+
+# WAIT/END LOAD_SCHEDULER ALT variants — all share the (work, entity1,
+# entity2, scheduler_id) shape that _scheduler already handles. Registering
+# them collapses ~15 vm:methodAltN(work, e1, e2, sched) calls into the
+# idiomatic npc:methodAltN("name", entity, work) form.
+
+_LOAD_SCHEDULER_ALTS = [
+    (0xA0, "WAIT_LOAD_SCHEDULER_MAIN_ALT2", "waitLoadSchedulerMainAlt2"),
+    (0xA1, "END_LOAD_SCHEDULER_MAIN", "endLoadSchedulerMain"),
+    (0xA2, "WAIT_LOAD_SCHEDULER_MAIN", "waitLoadSchedulerMain"),
+    (0xA3, "END_LOAD_SCHEDULER_MAIN_ALT", "endLoadSchedulerMainAlt"),
+    (0xBC, "WAIT_LOAD_SCHEDULER_ALT2", "waitLoadSchedulerAlt2"),
+    (0xBD, "END_LOAD_SCHEDULER_MAIN_ALT6", "endLoadSchedulerMainAlt6"),
+    (0xC6, "WAIT_LOAD_SCHEDULER_ALT3", "waitLoadSchedulerAlt3"),
+    (0xC7, "END_LOAD_SCHEDULER_ALT3", "endLoadSchedulerAlt3"),
+    (0xCE, "WAIT_LOAD_SCHEDULER_ALT4", "waitLoadSchedulerAlt4"),
+    (0xCF, "END_LOAD_SCHEDULER_ALT4", "endLoadSchedulerAlt4"),
+    (0xD1, "WAIT_LOAD_SCHEDULER_ALT5", "waitLoadSchedulerAlt5"),
+    (0xD6, "WAIT_LOAD_SCHEDULER_ALT6", "waitLoadSchedulerAlt6"),
+    (0xD7, "END_LOAD_SCHEDULER_ALT6", "endLoadSchedulerAlt6"),
+]
+for _code, _opname, _method in _LOAD_SCHEDULER_ALTS:
+    op(
+        _code,
+        _opname,
+        operands=[
+            ("work", "u16"),
+            ("entity1", "u32"),
+            ("entity2", "u32"),
+            ("scheduler_id", "u32"),
+        ],
+    )(_scheduler(_method))
+
+
 @op(0x9C, "STORE_CLIENT_LANGUAGE_ID", operands=[("result", "u16")])
 def store_client_language_id(ctx, a):
     return N.Assign(
