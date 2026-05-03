@@ -14,7 +14,7 @@ from .registry import op
 
 
 def _scheduler_args(
-    ctx, a, *, work_attr: str = "work", second_work_attr: str | None = None
+    ctx, a, *, work_attr: str | None = "work", second_work_attr: str | None = None
 ) -> list:
     e1 = ctx.entity(a.entity1)
     e2 = ctx.entity(a.entity2)
@@ -23,14 +23,15 @@ def _scheduler_args(
         args.append(e1)
     else:
         args.extend([e1, e2])
-    args.append(ctx.value(getattr(a, work_attr)))
+    if work_attr is not None:
+        args.append(ctx.value(getattr(a, work_attr)))
     if second_work_attr is not None:
         args.append(ctx.value(getattr(a, second_work_attr)))
     return args
 
 
 def _scheduler(
-    method: str, *, work_attr: str = "work", second_work_attr: str | None = None
+    method: str, *, work_attr: str | None = "work", second_work_attr: str | None = None
 ):
     def emit(ctx, a):
         return ctx.invoke(
@@ -621,12 +622,11 @@ op(
     0x53,
     "WAIT_SCHEDULER_TASK",
     operands=[
-        ("work", "u16"),
         ("entity1", "u32"),
         ("entity2", "u32"),
         ("scheduler_id", "u32"),
     ],
-)(_scheduler("waitScheduler"))
+)(_scheduler("waitScheduler", work_attr=None))
 
 op(
     0x55,
