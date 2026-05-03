@@ -765,6 +765,28 @@ op(
 )(_scheduler("loadScheduledTask", second_work_attr="work2"))
 
 
+op(
+    0x2C,
+    "CREATE_SCHEDULER_TASK",
+    operands=[("entity1", "u32"), ("entity2", "u32"), ("scheduler_id", "u32")],
+)(_scheduler("createSchedulerTask", work_attr=None))
+
+
+op(
+    0x2D,
+    "CREATE_ZONE_SCHEDULER_TASK",
+    operands=[("entity1", "u32"), ("entity2", "u32"), ("scheduler_id", "u32")],
+)(_scheduler("createZoneSchedulerTask", work_attr=None))
+
+
+@op(0x9C, "STORE_CLIENT_LANGUAGE_ID", operands=[("result", "u16")])
+def store_client_language_id(ctx, a):
+    return N.Assign(
+        targets=[ctx.value(a.result)],
+        values=[ctx.invoke("vm", "getClientLanguageId", [])],
+    )
+
+
 _CRAFTING_SIZES = {0: 8, 1: 2, 2: 12, 3: 10, 4: 10, 5: 14}
 _CRAFTING_METHODS = {
     0: "initialize",
