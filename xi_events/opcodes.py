@@ -98,7 +98,7 @@ _CMP_DISPATCH: dict[int, Callable[[N.Expression, N.Expression], N.Expression]] =
 
 @op(0x00, "END_REQSTACK", terminal=True)
 def end_reqstack(ctx, a):
-    return None
+    return N.Return(values=[])
 
 
 @op(
@@ -125,7 +125,7 @@ def if_conditional(ctx, a):
 
 @op(0x21, "END_EVENT")
 def end_event(ctx, a):
-    return None
+    return N.Return(values=[])
 
 
 @op(0x1A, "JUMP_TO_POSITION", operands=[("target", "u16")])

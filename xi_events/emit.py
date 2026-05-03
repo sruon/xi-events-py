@@ -53,6 +53,12 @@ class EmitContext:
 
 def render(stmts: list, name: str, ctx: EmitContext) -> str:
     body = _emit_block(stmts, ctx)
+    # Drop a trailing bare `return` — Lua functions return implicitly, and
+    # END_REQSTACK / END_EVENT at the natural function end is just noise.
+    # We keep them inside if/branches because there they encode an early exit
+    # the reader otherwise can't see.
+    if body and isinstance(body[-1], N.Return) and not body[-1].values:
+        body = body[:-1]
     fn = N.Function(
         name=N.Name(name),
         args=[N.Name("npc"), N.Name("player"), N.Name("params")],
