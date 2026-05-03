@@ -835,6 +835,49 @@ def store_client_language_id(ctx, a):
     )
 
 
+@op(
+    0x65,
+    "CALCULATE_3D_DISTANCE",
+    operands=[("result", "u16"), ("entity1", "u32"), ("entity2", "u32")],
+)
+def calculate_3d_distance(ctx, a):
+    return N.Assign(
+        targets=[ctx.value(a.result)],
+        values=[
+            ctx.invoke(
+                "vm",
+                "distance3d",
+                [ctx.entity(a.entity1), ctx.entity(a.entity2)],
+            )
+        ],
+    )
+
+
+def _id_or_ref(ctx, value: int) -> N.Expression:
+    """Render a u16 as a literal id (e.g. magic_id=122) when below the
+    work-area base, or as an imed/work-area reference when high."""
+    if value >= 0x1000:
+        return ctx.value(value)
+    return N.Number(value)
+
+
+@op(
+    0x73,
+    "SCHEDULE_MAGIC_CASTING",
+    operands=[
+        ("magic_id", "u16"),
+        ("caster_entity", "u32"),
+        ("target_entity", "u32"),
+    ],
+)
+def schedule_magic_casting(ctx, a):
+    return N.Invoke(
+        source=ctx.entity(a.caster_entity),
+        func=N.Name("castMagic"),
+        args=[_id_or_ref(ctx, a.magic_id), ctx.entity(a.target_entity)],
+    )
+
+
 _CRAFTING_SIZES = {0: 8, 1: 2, 2: 12, 3: 10, 4: 10, 5: 14}
 _CRAFTING_METHODS = {
     0: "initialize",
