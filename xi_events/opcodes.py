@@ -799,6 +799,25 @@ op(
 # them collapses ~15 vm:methodAltN(work, e1, e2, sched) calls into the
 # idiomatic npc:methodAltN("name", entity, work) form.
 
+_LOAD_SCHEDULED_TASK_ALTS = [
+    (0x9F, "LOAD_SCHEDULED_TASK_ALT", "loadScheduledTaskAlt"),
+    (0xCD, "LOAD_SCHEDULED_TASK_ALT4", "loadScheduledTaskAlt4"),
+    (0xD0, "LOAD_SCHEDULED_TASK_ALT5", "loadScheduledTaskAlt5"),
+]
+for _code, _opname, _method in _LOAD_SCHEDULED_TASK_ALTS:
+    op(
+        _code,
+        _opname,
+        operands=[
+            ("work", "u16"),
+            ("entity1", "u32"),
+            ("entity2", "u32"),
+            ("scheduler_id", "u32"),
+            ("work2", "u16"),
+        ],
+    )(_scheduler(_method, second_work_attr="work2"))
+
+
 _LOAD_SCHEDULER_ALTS = [
     (0xA0, "WAIT_LOAD_SCHEDULER_MAIN_ALT2", "waitLoadSchedulerMainAlt2"),
     (0xA1, "END_LOAD_SCHEDULER_MAIN", "endLoadSchedulerMain"),
@@ -833,6 +852,12 @@ def store_client_language_id(ctx, a):
         targets=[ctx.value(a.result)],
         values=[ctx.invoke("vm", "getClientLanguageId", [])],
     )
+
+
+@op(0x22, "ENTITY_HIDE_FLAG", operands=[("enabled", "u8")])
+def entity_hide_flag(ctx, a):
+    method = "hide" if a.enabled else "show"
+    return N.Invoke(source=N.Name("npc"), func=N.Name(method), args=[])
 
 
 @op(
