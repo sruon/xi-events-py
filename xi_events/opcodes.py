@@ -926,32 +926,37 @@ def opcode_9d(ctx, a):
     return ctx.invoke("vm", fn, args)
 
 
-# Math write-back ops: result = vm:fn(...). Mirror the GET_BIT_WORK_RANGE
-# pattern — the result address is always the first operand.
+# Math write-back ops: result = math.fn(...). The opcode result is the FFXI
+# integer-scaled trig output — input is encoded angle, multiplier scales the
+# float back to integer. Decompose as `math.sin(input) * multiplier` so the
+# semantics are transparent in plain Lua.
 
 
-@op(
+def _trig_emit(fn_name: str):
+    def emit(ctx, a):
+        call = N.Call(
+            func=N.Name(fn_name), args=[ctx.value(a.input)]
+        )
+        return N.Assign(
+            targets=[ctx.value(a.result)],
+            values=[N.MultOp(left=call, right=ctx.value(a.multiplier))],
+        )
+
+    return emit
+
+
+op(
     0x16,
     "SINE_CALCULATION",
     operands=[("result", "u16"), ("input", "u16"), ("multiplier", "u16")],
-)
-def sine_calculation(ctx, a):
-    return N.Assign(
-        targets=[ctx.value(a.result)],
-        values=[ctx.invoke("vm", "sin", [ctx.value(a.input), ctx.value(a.multiplier)])],
-    )
+)(_trig_emit("math.sin"))
 
 
-@op(
+op(
     0x17,
     "COSINE_CALCULATION",
     operands=[("result", "u16"), ("input", "u16"), ("multiplier", "u16")],
-)
-def cosine_calculation(ctx, a):
-    return N.Assign(
-        targets=[ctx.value(a.result)],
-        values=[ctx.invoke("vm", "cos", [ctx.value(a.input), ctx.value(a.multiplier)])],
-    )
+)(_trig_emit("math.cos"))
 
 
 @op(
@@ -963,7 +968,10 @@ def atan2_calculation(ctx, a):
     return N.Assign(
         targets=[ctx.value(a.result)],
         values=[
-            ctx.invoke("vm", "atan2", [ctx.value(a.y_input), ctx.value(a.x_input)])
+            N.Call(
+                func=N.Name("math.atan2"),
+                args=[ctx.value(a.y_input), ctx.value(a.x_input)],
+            )
         ],
     )
 
@@ -1026,4 +1034,41 @@ def set_entity_blinking(ctx, a):
         source=ctx.entity(a.entity),
         func=N.Name("setBlinking"),
         args=[N.Number(a.blink_flag)],
+    )
+
+
+def _entity_method(method: str, entity_attr: str = "entity_id"):
+    def emit(ctx, a):
+        return N.Invoke(
+            source=ctx.entity(getattr(a, entity_attr)),
+            func=N.Name(method),
+            args=[],
+        )
+
+    return emit
+
+
+op(0x76, "CHECK_ENTITY_RENDER_FLAGS", operands=[("entity", "u32")])(
+    _entity_method("checkRenderFlags", entity_attr="entity")
+)
+
+op(0x99, "WAIT_ANIMATION", operands=[("entity_id", "u32")])(
+    _entity_method("waitAnimation")
+)
+
+op(0xC1, "KILL_ENTITY_ACTION", operands=[("entity_id", "u32")])(
+    _entity_method("killAction")
+)
+
+
+@op(
+    0x49,
+    "PRINT_EVENT_MESSAGE_NO_SPEAKER",
+    operands=[("target_entity", "u32"), ("message_id", "u16")],
+)
+def print_event_message_no_speaker(ctx, a):
+    return N.Invoke(
+        source=ctx.entity(a.target_entity),
+        func=N.Name("printNoSpeaker"),
+        args=[ctx.value(a.message_id)],
     )
