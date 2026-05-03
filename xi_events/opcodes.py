@@ -362,14 +362,18 @@ def _bit_conditional(ctx, fn_name, target, bit, condition) -> N.Statement:
     ],
 )
 def set_bit_work_range(ctx, a):
-    return ctx.invoke(
-        "vm",
-        "bit_range_set",
-        [
-            ctx.value(a.target),
-            ctx.value(a.start_bit),
-            ctx.value(a.end_bit),
-            ctx.value(a.source),
+    return N.Assign(
+        targets=[ctx.value(a.target)],
+        values=[
+            N.Call(
+                func=N.Name("bit_range_set"),
+                args=[
+                    ctx.value(a.target),
+                    ctx.value(a.start_bit),
+                    ctx.value(a.end_bit),
+                    ctx.value(a.source),
+                ],
+            )
         ],
     )
 
