@@ -201,6 +201,60 @@ def divide_values(ctx, a):
     return _compound_assign(ctx, a.dest, N.FloatDivOp, ctx.value(a.source))
 
 
+@op(
+    0x3F,
+    "MODULO_OPERATION",
+    operands=[("target", "u16"), ("dividend", "u16"), ("divisor", "u16")],
+)
+def modulo_operation(ctx, a):
+    return N.Assign(
+        targets=[ctx.value(a.target)],
+        values=[N.ModOp(left=ctx.value(a.dividend), right=ctx.value(a.divisor))],
+    )
+
+
+@op(0x12, "GENERATE_RANDOM", operands=[("target", "u16")])
+def generate_random(ctx, a):
+    return N.Assign(
+        targets=[ctx.value(a.target)],
+        values=[N.Call(func=N.Name("math.random"), args=[])],
+    )
+
+
+@op(0x13, "GENERATE_RANDOM_RANGE", operands=[("target", "u16"), ("max_value", "u16")])
+def generate_random_range(ctx, a):
+    return N.Assign(
+        targets=[ctx.value(a.target)],
+        values=[N.Call(func=N.Name("math.random"), args=[ctx.value(a.max_value)])],
+    )
+
+
+@op(
+    0x36,
+    "SET_ENTITY_EVENT_POSITION",
+    operands=[("x", "u16"), ("z", "u16"), ("y", "u16")],
+)
+def set_entity_event_position(ctx, a):
+    return ctx.invoke(
+        "vm",
+        "setEntityEventPosition",
+        [ctx.coord(a.x), ctx.coord(a.z), ctx.coord(a.y)],
+    )
+
+
+@op(
+    0x37,
+    "UPDATE_EVENT_POSITION_AND_DIR",
+    operands=[("x", "u16"), ("z", "u16"), ("y", "u16"), ("dir", "u16")],
+)
+def update_event_position_and_dir(ctx, a):
+    return ctx.invoke(
+        "vm",
+        "updateEventPositionAndDir",
+        [ctx.coord(a.x), ctx.coord(a.z), ctx.coord(a.y), ctx.yaw(a.dir)],
+    )
+
+
 @op(0x0D, "BITWISE_AND", operands=[("dest", "u16"), ("source", "u16")])
 def bitwise_and(ctx, a):
     return _compound_assign(ctx, a.dest, N.BAndOp, ctx.value(a.source))
