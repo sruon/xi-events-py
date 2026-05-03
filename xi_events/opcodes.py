@@ -243,15 +243,35 @@ def set_entity_event_position(ctx, a):
 
 
 @op(
-    0x37,
-    "UPDATE_EVENT_POSITION_AND_DIR",
-    operands=[("x", "u16"), ("z", "u16"), ("y", "u16"), ("dir", "u16")],
+    0x3A,
+    "CONVERT_YAW_TO_BYTE",
+    operands=[("entity_id", "u32"), ("result_destination", "u16")],
 )
-def update_event_position_and_dir(ctx, a):
-    return ctx.invoke(
-        "vm",
-        "updateEventPositionAndDir",
-        [ctx.coord(a.x), ctx.coord(a.z), ctx.coord(a.y), ctx.yaw(a.dir)],
+def convert_yaw_to_byte(ctx, a):
+    return N.Assign(
+        targets=[ctx.value(a.result_destination)],
+        values=[ctx.invoke("vm", "convertYawToByte", [ctx.entity(a.entity_id)])],
+    )
+
+
+@op(
+    0x3B,
+    "GET_ENTITY_POSITION",
+    operands=[
+        ("entity_id", "u32"),
+        ("x_destination", "u16"),
+        ("y_destination", "u16"),
+        ("z_destination", "u16"),
+    ],
+)
+def get_entity_position(ctx, a):
+    return N.Assign(
+        targets=[
+            ctx.value(a.x_destination),
+            ctx.value(a.y_destination),
+            ctx.value(a.z_destination),
+        ],
+        values=[ctx.invoke("vm", "getEntityPosition", [ctx.entity(a.entity_id)])],
     )
 
 
