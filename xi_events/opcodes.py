@@ -924,3 +924,106 @@ def opcode_9d(ctx, a):
         else:
             args.append(N.Number(w))
     return ctx.invoke("vm", fn, args)
+
+
+# Math write-back ops: result = vm:fn(...). Mirror the GET_BIT_WORK_RANGE
+# pattern — the result address is always the first operand.
+
+
+@op(
+    0x16,
+    "SINE_CALCULATION",
+    operands=[("result", "u16"), ("input", "u16"), ("multiplier", "u16")],
+)
+def sine_calculation(ctx, a):
+    return N.Assign(
+        targets=[ctx.value(a.result)],
+        values=[ctx.invoke("vm", "sin", [ctx.value(a.input), ctx.value(a.multiplier)])],
+    )
+
+
+@op(
+    0x17,
+    "COSINE_CALCULATION",
+    operands=[("result", "u16"), ("input", "u16"), ("multiplier", "u16")],
+)
+def cosine_calculation(ctx, a):
+    return N.Assign(
+        targets=[ctx.value(a.result)],
+        values=[ctx.invoke("vm", "cos", [ctx.value(a.input), ctx.value(a.multiplier)])],
+    )
+
+
+@op(
+    0x18,
+    "ATAN2_CALCULATION",
+    operands=[("result", "u16"), ("y_input", "u16"), ("x_input", "u16")],
+)
+def atan2_calculation(ctx, a):
+    return N.Assign(
+        targets=[ctx.value(a.result)],
+        values=[
+            ctx.invoke("vm", "atan2", [ctx.value(a.y_input), ctx.value(a.x_input)])
+        ],
+    )
+
+
+@op(0x83, "GET_GAME_TIME", operands=[("target", "u16")])
+def get_game_time(ctx, a):
+    return N.Assign(
+        targets=[ctx.value(a.target)],
+        values=[ctx.invoke("vm", "getGameTime", [])],
+    )
+
+
+# Single-entity action opcodes: render as entity:method(args) instead of
+# vm:opName(entity, args). The entity is the natural receiver.
+
+
+@op(0x6B, "ENTITY_IDLE_MOTION", operands=[("animation_id", "u32"), ("entity_id", "u32")])
+def entity_idle_motion(ctx, a):
+    return N.Invoke(
+        source=ctx.entity(a.entity_id),
+        func=N.Name("idleMotion"),
+        args=[W.lua_string(W.action_id(a.animation_id))],
+    )
+
+
+@op(
+    0x6C,
+    "FADE_ENTITY_COLOR",
+    operands=[("entity_id", "u32"), ("end_alpha", "u16"), ("fade_time", "u16")],
+)
+def fade_entity_color(ctx, a):
+    return N.Invoke(
+        source=ctx.entity(a.entity_id),
+        func=N.Name("fadeColor"),
+        args=[ctx.value(a.end_alpha), ctx.value(a.fade_time)],
+    )
+
+
+@op(0x6E, "PLAY_EMOTE", operands=[("entity_id", "u32"), ("emote_data", "u16")])
+def play_emote(ctx, a):
+    return N.Invoke(
+        source=ctx.entity(a.entity_id),
+        func=N.Name("playEmote"),
+        args=[ctx.value(a.emote_data)],
+    )
+
+
+@op(0x7B, "UNSET_ENTITY_TALKING", operands=[("entity_id", "u32")])
+def unset_entity_talking(ctx, a):
+    return N.Invoke(
+        source=ctx.entity(a.entity_id),
+        func=N.Name("unsetTalking"),
+        args=[],
+    )
+
+
+@op(0x81, "SET_ENTITY_BLINKING", operands=[("blink_flag", "u8"), ("entity", "u32")])
+def set_entity_blinking(ctx, a):
+    return N.Invoke(
+        source=ctx.entity(a.entity),
+        func=N.Name("setBlinking"),
+        args=[N.Number(a.blink_flag)],
+    )
