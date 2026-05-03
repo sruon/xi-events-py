@@ -310,14 +310,24 @@ def decrement_value(ctx, a):
     return _compound_assign(ctx, a.target, N.SubOp, N.Number(1))
 
 
+def _bit_assign(ctx, fn_name: str, target_addr: int, bit_addr: int) -> N.Assign:
+    target = ctx.value(target_addr)
+    return N.Assign(
+        targets=[target],
+        values=[
+            N.Call(func=N.Name(fn_name), args=[target, ctx.value(bit_addr)]),
+        ],
+    )
+
+
 @op(0x09, "SET_BIT_FLAG", operands=[("target", "u16"), ("bit", "u16")])
 def set_bit_flag(ctx, a):
-    return ctx.invoke("vm", "bit_set", [ctx.value(a.target), ctx.value(a.bit)])
+    return _bit_assign(ctx, "bit_set", a.target, a.bit)
 
 
 @op(0x0A, "CLEAR_BIT_FLAG", operands=[("target", "u16"), ("bit", "u16")])
 def clear_bit_flag(ctx, a):
-    return ctx.invoke("vm", "bit_clear", [ctx.value(a.target), ctx.value(a.bit)])
+    return _bit_assign(ctx, "bit_clear", a.target, a.bit)
 
 
 @op(
@@ -339,14 +349,14 @@ def clear_bit_flag_conditional(ctx, a):
 
 
 def _bit_conditional(ctx, fn_name, target, bit, condition) -> N.Statement:
-    body_call = ctx.invoke("vm", fn_name, [ctx.value(target), ctx.value(bit)])
+    body = _bit_assign(ctx, fn_name, target, bit)
     cond_node = ctx.value(condition)
     # Skip the wrapper for trivially-true literal conditions (very common).
     if isinstance(cond_node, N.Number) and cond_node.n != 0:
-        return body_call
+        return body
     return N.If(
         test=N.NotEqToOp(left=cond_node, right=N.Number(0)),
-        body=N.Block(body=[body_call]),
+        body=N.Block(body=[body]),
         orelse=None,
     )
 
