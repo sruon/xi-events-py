@@ -665,18 +665,32 @@ def load_wait(ctx, a):
     return N.Invoke(source=ctx.entity(a.entity), func=N.Name("waitForLoad"), args=[])
 
 
-@op(0x92, "ADJUST_RENDER_FLAGS3", operands=[("flag", "u8"), ("entity", "u32")])
-def adjust_render_flags3(ctx, a):
-    return ctx.invoke(
-        "vm", "adjustRenderFlags", [ctx.entity(a.entity), N.Number(a.flag)]
-    )
+def _entity_flag_method(method: str, flag_attr: str = "flag", entity_attr: str = "entity"):
+    def emit(ctx, a):
+        return N.Invoke(
+            source=ctx.entity(getattr(a, entity_attr)),
+            func=N.Name(method),
+            args=[N.Number(getattr(a, flag_attr))],
+        )
+
+    return emit
 
 
-@op(0x94, "ADJUST_RENDER_FLAGS3_ALT", operands=[("flag", "u8"), ("entity", "u32")])
-def adjust_render_flags3_alt(ctx, a):
-    return ctx.invoke(
-        "vm", "adjustRenderFlagsAlt", [ctx.entity(a.entity), N.Number(a.flag)]
-    )
+op(0x92, "ADJUST_RENDER_FLAGS3", operands=[("flag", "u8"), ("entity", "u32")])(
+    _entity_flag_method("adjustRenderFlags")
+)
+
+op(0x94, "ADJUST_RENDER_FLAGS3_ALT", operands=[("flag", "u8"), ("entity", "u32")])(
+    _entity_flag_method("adjustRenderFlagsAlt")
+)
+
+op(0x2F, "ADJUST_RENDER_FLAGS0", operands=[("flag", "u8"), ("entity_id", "u32")])(
+    _entity_flag_method("adjustRenderFlags0", entity_attr="entity_id")
+)
+
+op(0x7C, "ADJUST_RENDER_FLAGS2", operands=[("enable_flag", "u8"), ("entity_id", "u32")])(
+    _entity_flag_method("adjustRenderFlags2", flag_attr="enable_flag", entity_attr="entity_id")
+)
 
 
 @op(0x93, "DISPLAY_ITEM_INFO", operands=[("item", "u16")])
@@ -853,14 +867,10 @@ def send_event_update(ctx, a):
 
 @op(0x27, "REQ_SET", operands=[("priority", "u8"), ("entity", "u32"), ("tag", "u8")])
 def req_set(ctx, a):
-    return ctx.invoke(
-        "vm",
-        "reqSet",
-        [
-            ctx.entity(a.entity),
-            N.Number(a.priority),
-            N.Number(a.tag),
-        ],
+    return N.Invoke(
+        source=ctx.entity(a.entity),
+        func=N.Name("reqSet"),
+        args=[N.Number(a.priority), N.Number(a.tag)],
     )
 
 
@@ -876,26 +886,19 @@ def req_set(ctx, a):
 )
 def req_set_wait(ctx, a):
     eid = (a.server_id2 << 16) | a.server_id1
-    return ctx.invoke(
-        "vm",
-        "reqSetWait",
-        [
-            ctx.entity(eid),
-            N.Number(a.priority),
-            N.Number(a.tag),
-        ],
+    return N.Invoke(
+        source=ctx.entity(eid),
+        func=N.Name("reqSetWait"),
+        args=[N.Number(a.priority), N.Number(a.tag)],
     )
 
 
 @op(0x2A, "GET_REQ_LEVEL", operands=[("level", "u8"), ("entity", "u32")])
 def get_req_level(ctx, a):
-    return ctx.invoke(
-        "vm",
-        "getReqLevel",
-        [
-            ctx.entity(a.entity),
-            N.Number(a.level),
-        ],
+    return N.Invoke(
+        source=ctx.entity(a.entity),
+        func=N.Name("getReqLevel"),
+        args=[N.Number(a.level)],
     )
 
 
