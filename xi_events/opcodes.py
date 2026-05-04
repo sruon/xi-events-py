@@ -665,7 +665,9 @@ def load_wait(ctx, a):
     return N.Invoke(source=ctx.entity(a.entity), func=N.Name("waitForLoad"), args=[])
 
 
-def _entity_flag_method(method: str, flag_attr: str = "flag", entity_attr: str = "entity"):
+def _entity_flag_method(
+    method: str, flag_attr: str = "flag", entity_attr: str = "entity"
+):
     def emit(ctx, a):
         return N.Invoke(
             source=ctx.entity(getattr(a, entity_attr)),
@@ -688,8 +690,12 @@ op(0x2F, "ADJUST_RENDER_FLAGS0", operands=[("flag", "u8"), ("entity_id", "u32")]
     _entity_flag_method("adjustRenderFlags0", entity_attr="entity_id")
 )
 
-op(0x7C, "ADJUST_RENDER_FLAGS2", operands=[("enable_flag", "u8"), ("entity_id", "u32")])(
-    _entity_flag_method("adjustRenderFlags2", flag_attr="enable_flag", entity_attr="entity_id")
+op(
+    0x7C, "ADJUST_RENDER_FLAGS2", operands=[("enable_flag", "u8"), ("entity_id", "u32")]
+)(
+    _entity_flag_method(
+        "adjustRenderFlags2", flag_attr="enable_flag", entity_attr="entity_id"
+    )
 )
 
 
@@ -1075,9 +1081,7 @@ def opcode_9d(ctx, a):
 
 def _trig_emit(fn_name: str):
     def emit(ctx, a):
-        call = N.Call(
-            func=N.Name(fn_name), args=[ctx.value(a.input)]
-        )
+        call = N.Call(func=N.Name(fn_name), args=[ctx.value(a.input)])
         return N.Assign(
             targets=[ctx.value(a.result)],
             values=[N.MultOp(left=call, right=ctx.value(a.multiplier))],
@@ -1129,7 +1133,9 @@ def get_game_time(ctx, a):
 # vm:opName(entity, args). The entity is the natural receiver.
 
 
-@op(0x6B, "ENTITY_IDLE_MOTION", operands=[("animation_id", "u32"), ("entity_id", "u32")])
+@op(
+    0x6B, "ENTITY_IDLE_MOTION", operands=[("animation_id", "u32"), ("entity_id", "u32")]
+)
 def entity_idle_motion(ctx, a):
     return N.Invoke(
         source=ctx.entity(a.entity_id),
