@@ -91,6 +91,18 @@ def _build_if(if_node: IfNode, ctx: EmitContext) -> N.If:
     then_body = _emit_block(if_node.then, ctx)
     else_body = _emit_block(if_node.else_, ctx)
 
+    # Empty then-branch with non-empty else usually means the bytecode had
+    # `if cond then GOTO merge end <work>` — the then-path skipped the work
+    # via an unconditional jump that the structurer absorbed. Invert and swap
+    # so the body reads naturally instead of `if cond then end <orphan code>`.
+    # Limited to == / != for safety. NOTE: this rewrites control flow and
+    # will NOT round-trip through the compiler unless the compiler also
+    # recognizes the inverse shape.
+    if not then_body and else_body and isinstance(test, (N.EqToOp, N.NotEqToOp)):
+        then_body, else_body = else_body, then_body
+        cls = N.NotEqToOp if isinstance(test, N.EqToOp) else N.EqToOp
+        test = cls(left=test.left, right=test.right)
+
     # Collapse `else { if(...) }` into elseif.
     if len(else_body) == 1 and isinstance(else_body[0], N.If):
         inner = else_body[0]
