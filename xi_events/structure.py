@@ -41,6 +41,18 @@ def recover(cfg: CFG) -> list:
     )
 
 
+# Known limitation: ``visited`` is shared globally across the entire walk to
+# prevent infinite recursion on back-edges. Side effect: if a block (typically
+# a popular merge point reached by multiple ifs) is visited via an early
+# walk path, later branches that target it will see it as visited and exit
+# empty. Symptom in output: ``if cond then end`` where the body should have
+# been the merge code. A targeted fix would require dropping the global
+# visited (relying on ``stop=merge`` post-dominator boundaries) and handling
+# back-edges via per-walk-stack cycle detection — non-trivial because
+# ``_immediate_post_dominators`` currently filters function-exit-bound merges
+# to ``None``, which the walker treats as "walk until exit".
+
+
 def _walk(
     cfg: CFG,
     start: int | None,
