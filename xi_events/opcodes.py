@@ -112,6 +112,34 @@ def goto(ctx, a):
     return None
 
 
+def _imed_ref(addr: int) -> N.Expression:
+    return N.Index(
+        idx=N.Number(addr & 0x7FFF),
+        value=N.Name("imed"),
+        notation=N.IndexNotation.SQUARE,
+    )
+
+
+def _cond_operands(ctx, lhs: int, rhs: int) -> tuple:
+    """Render the two operands of an IF_CONDITIONAL.
+
+    When BOTH operands are in the IMED range, ``ctx.value`` would inline
+    each to its stored literal — producing nonsense like ``if 6 == 0 then``
+    where the original Lua compared two stored values from the imed pool.
+    De-inline both as ``imed[N]`` references in that case so the comparison
+    stays semantically meaningful and matches the ``-- imed:`` header.
+
+    Otherwise (one work-area + one imed, or both work-area), the standard
+    inlining is correct: ``if result == 0 then`` reads better than
+    ``if result == imed[2] then``.
+    """
+    lhs_is_imed = 0x8000 <= lhs <= 0x8FFF
+    rhs_is_imed = 0x8000 <= rhs <= 0x8FFF
+    if lhs_is_imed and rhs_is_imed:
+        return _imed_ref(lhs), _imed_ref(rhs)
+    return ctx.value(lhs), ctx.value(rhs)
+
+
 @op(
     0x02,
     "IF_CONDITIONAL",
@@ -120,7 +148,8 @@ def goto(ctx, a):
 )
 def if_conditional(ctx, a):
     cmp_fn = _CMP_DISPATCH.get(a.cond & 0x0F, _cmp_eq)
-    return cmp_fn(ctx.value(a.lhs), ctx.value(a.rhs))
+    lhs, rhs = _cond_operands(ctx, a.lhs, a.rhs)
+    return cmp_fn(lhs, rhs)
 
 
 @op(0x21, "END_EVENT")
